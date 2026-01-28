@@ -1,4 +1,5 @@
-const API = ""; // relative when same origin (prod or proxy)
+// Backend API URL - change this for production deployment
+const API = import.meta.env.VITE_API_URL || "https://rag-6ftt.onrender.com";
 
 async function req<T>(
   path: string,
