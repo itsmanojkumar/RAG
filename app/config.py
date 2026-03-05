@@ -28,6 +28,7 @@ class Settings(BaseSettings):
 
     # Vector store
     VECTOR_STORE: Literal["faiss", "pinecone"] = "faiss"
+    # Base path for FAISS index directory (LangChain will create a folder here)
     FAISS_INDEX_PATH: str = "data/faiss.index"
     FAISS_METADATA_PATH: str = "data/faiss_metadata.json"
     PINECONE_API_KEY: str = ""

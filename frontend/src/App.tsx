@@ -32,6 +32,28 @@ function App() {
       setDocuments(res.documents);
     } catch (err) {
       console.error("Failed to load documents:", err);
+
+      // #region agent log
+      fetch("http://127.0.0.1:7355/ingest/c8f57fbe-6440-4313-a1ca-655dc0688a2a", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Debug-Session-Id": "f109f0",
+        },
+        body: JSON.stringify({
+          sessionId: "f109f0",
+          runId: "initial",
+          hypothesisId: "H2",
+          location: "frontend/src/App.tsx:loadDocuments:catch",
+          message: "loadDocuments failed",
+          data: {
+            errorName: err instanceof Error ? err.name : typeof err,
+            errorMessage: err instanceof Error ? err.message : String(err),
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
     }
   }
 

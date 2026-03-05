@@ -11,18 +11,107 @@ async function req<T>(
     (headers as Record<string, string>)["Content-Type"] = "application/json";
     opts.body = JSON.stringify(json);
   }
-  const r = await fetch(`${API}${path}`, { ...opts, headers });
-  if (!r.ok) {
-    const t = await r.text();
-    let msg = t;
-    try {
-      const j = JSON.parse(t);
-      msg = j.detail ?? t;
-    } catch {}
-    throw new Error(msg);
+
+  const url = `${API}${path}`;
+
+  // #region agent log
+  fetch("http://127.0.0.1:7355/ingest/c8f57fbe-6440-4313-a1ca-655dc0688a2a", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "f109f0",
+    },
+    body: JSON.stringify({
+      sessionId: "f109f0",
+      runId: "initial",
+      hypothesisId: "H1",
+      location: "frontend/src/api.ts:req:beforeFetch",
+      message: "Request starting",
+      data: { url, hasJson: json !== undefined },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+
+  try {
+    const r = await fetch(url, { ...opts, headers });
+
+    // #region agent log
+    fetch("http://127.0.0.1:7355/ingest/c8f57fbe-6440-4313-a1ca-655dc0688a2a", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "f109f0",
+      },
+      body: JSON.stringify({
+        sessionId: "f109f0",
+        runId: "initial",
+        hypothesisId: "H2",
+        location: "frontend/src/api.ts:req:afterFetch",
+        message: "Response received",
+        data: { url, status: r.status },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
+    if (!r.ok) {
+      const t = await r.text();
+      let msg = t;
+      try {
+        const j = JSON.parse(t);
+        msg = (j as any).detail ?? t;
+      } catch {}
+
+      // #region agent log
+      fetch("http://127.0.0.1:7355/ingest/c8f57fbe-6440-4313-a1ca-655dc0688a2a", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Debug-Session-Id": "f109f0",
+        },
+        body: JSON.stringify({
+          sessionId: "f109f0",
+          runId: "initial",
+          hypothesisId: "H3",
+          location: "frontend/src/api.ts:req:errorResponse",
+          message: "Non-OK response",
+          data: { url, status: r.status, bodySnippet: t.slice(0, 200) },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+
+      throw new Error(msg);
+    }
+    if (r.status === 204) return undefined as T;
+    return r.json() as Promise<T>;
+  } catch (err) {
+    // #region agent log
+    fetch("http://127.0.0.1:7355/ingest/c8f57fbe-6440-4313-a1ca-655dc0688a2a", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "f109f0",
+      },
+      body: JSON.stringify({
+        sessionId: "f109f0",
+        runId: "initial",
+        hypothesisId: "H4",
+        location: "frontend/src/api.ts:req:catch",
+        message: "Fetch threw error",
+        data: {
+          url,
+          errorName: err instanceof Error ? err.name : typeof err,
+          errorMessage: err instanceof Error ? err.message : String(err),
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
+    throw err;
   }
-  if (r.status === 204) return undefined as T;
-  return r.json() as Promise<T>;
 }
 
 export interface UploadRes {
